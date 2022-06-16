@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>page</title>
+    <script src="db/Database.js"></script>
+</head>
+<body onload="carte();userstate();scoretable()">
+    <script>
+         function carte(){//http://oc3.lddr.ch/Christ/site/page.html
+            var mapop={
+                center:new google.maps.LatLng(10,0),
+                zoom:2
+            }
+            map=new google.maps.Map(document.getElementById("map"),mapop)
+        }
+        function geoloc(){
+            if (navigator.geolocation){
+            navigator.geolocation.getCurrentPosition(loc)
+            } else {
+            let txterreur="Géolocalisation impossible."
+            document.getElementById("erreur").innerHTML=txterreur
+            }
+        }
+        function loc(position){
+            let latt=position.coords.latitude
+            let lont=position.coords.longitude
+            posept(latt,lont)
+        }
+        let x=0
+        function poscarte(){
+            x=x+1
+            if (x<2) {
+                if (document.getElementById("select").value==1) {
+                    geoloc()
+               } else {
+                    lat=(Math.random()*(85-(-85))+(-85)).toFixed(6)
+                    lon=(Math.random()*(180-(-180))+(-180)).toFixed(6)
+                    posept(lat,lon)
+                }
+            } else {
+                let txterr="Point déja placé!"
+                document.getElementById("ptmis").innerHTML=txterr
+            }
+        }
+        ptentr=[]
+        function posept(lat,lon){
+            ptentr.push(lat)
+            ptentr.push(lon)
+            var markeropuser={
+                position: new google.maps.LatLng(lat,lon),
+                map: map,
+                icon: "images/marker-user.png",
+                title: "point",
+                label: "Point entré"
+            }
+            var markeruser=new google.maps.Marker(markeropuser)
+            let cont="<button onclick="+"img()"+">Afficher image</button>"
+            document.getElementById("bt").innerHTML=cont
+        }
+        var tabimg=["40.65425163 14.67374319","36.87188131 -2.48758989"]
+        function img(){
+            let nmbrand=Math.round(Math.random()*((tabimg.length-1)-(0))+(0))
+            latlon=tabimg[nmbrand].split(" ")
+            let lat=latlon[0]
+            let lon=latlon[1]
+            let img="<img src="+"https://maps.googleapis.com/maps/api/streetview?location="+lat+","+lon+"&size=500x500&key=AIzaSyCbmtNmv7whCb-3rWYFnSOTIa56Eqgi8iw"+">"
+            document.getElementById("img").innerHTML=img
+            ptentr.push(lat)
+            ptentr.push(lon)
+            let txt="Estimer distance en kilomètres :"
+            let inp="<input id="+"inpp"+">"
+            let but="<button onclick="+"calcdistance()"+">Envoyer</button>"
+            document.getElementById("txt").innerHTML=txt
+            document.getElementById("inp").innerHTML=inp
+            document.getElementById("but").innerHTML=but
+        }
+        function mesdistance(lat1,lon1,lat2,lon2){
+            let r=6378.137
+            let dlat=lat2*Math.PI/180-lat1*Math.PI/180
+            let dlon=lon2*Math.PI/180-lon1*Math.PI/180
+            let a=Math.sin(dlat/2)*Math.sin(dlat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dlon/2)*Math.sin(dlon/2)
+            let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+            let d=(r*c).toFixed(3)
+            return(d)
+        }
+        function calcdistance(){
+            do{
+                var esti=document.getElementById("inpp").value
+                }
+            while(esti<=0 || isNaN(esti))
+            let vraidis=mesdistance(ptentr[0],ptentr[1],ptentr[2],ptentr[3])
+            diff=(Math.abs(esti-vraidis)).toFixed(3)
+            document.getElementById("bt").innerHTML=""
+            document.getElementById("erreur").innerHTML=""
+            document.getElementById("ptmis").innerHTML=""
+            document.getElementById("sel").innerHTML=""
+            document.getElementById("prembutt").innerHTML=""
+            document.getElementById("txt").innerHTML=""
+            document.getElementById("but").innerHTML=""
+            document.getElementById("inp").innerHTML=""
+            if (diff<500) {
+                let msgdif=("Bonne estimation! L'erreur est de : "+diff+"km.")
+                document.getElementById("msgdiff").innerHTML=msgdif
+            } else {
+                let msgdif=("Assez loin du compte! L'erreur est de : "+diff+"km.")
+                document.getElementById("msgdiff").innerHTML=msgdif
+            }
+            let bonnediff=("La bonne distance était : "+vraidis+"km.")
+            document.getElementById("bonnediff").innerHTML=bonnediff
+            var markeropuser2={
+                position: new google.maps.LatLng(ptentr[0],ptentr[1]),
+                map: map,
+                icon: "images/marker-user.png",
+                title: "point",
+                label: "Point entré"
+            }
+            var markeruser2=new google.maps.Marker(markeropuser2)
+            var markeroprep={
+                position: new google.maps.LatLng(ptentr[2],ptentr[3]),
+                map: map,
+                icon: "images/marker-objet.png",
+                title: "point",
+                label: "Position image"
+            }
+            var markrep=new google.maps.Marker(markeroprep)
+            score()
+        }
+        function get(){
+            var passvars=document.cookie
+                .split("; ")
+                .find(row => row.startsWith("pass"))
+                .substring(5);
+            var params=new URLSearchParams(passvars),
+                first=params.get("first");
+            return(first)
+        }
+        function userstate(){
+            let msg="Connecté en temps que : "+get()+"."
+            document.getElementById("userstate").innerHTML=msg
+        }
+        function score(){
+            let query="SELECT * FROM usermdp"
+            let res=Database.query(query)
+            for (let k=0;k<res.length;k++){
+                if (res[k].utilisateur==get()) {
+                    if (res[k].bestscoreA==null) {
+                        let query2="UPDATE usermdp SET bestscoreA = '"+diff+"' WHERE utilisateur = '"+get()+"';"
+                        let res2=Database.query(query2)
+                    } else {
+                        if (diff<parseFloat(res[k].bestscoreA)) {
+                            let query3="UPDATE usermdp SET bestscoreA = '"+diff+"' WHERE utilisateur = '"+get()+"';"
+                            let res3=Database.query(query3)
+                        }
+                    }
+                }
+            }
+        }
+        function scoretable(){
+            let tab=[]
+            let query="SELECT * FROM usermdp"
+            let res=Database.query(query)
+            for (let k=0;k<res.length;k++){
+                if (!(res[k].bestscoreA==null)) {
+                    tab.push(parseFloat(res[k].bestscoreA))
+                }
+            }
+            tab.sort(function(a,b){return(a-b)})
+            for (let l=0;l<res.length;l++){
+                if (parseFloat(res[l].bestscoreA)==tab[0]) {
+                    premiernom=res[l].utilisateur
+                }
+                if (parseFloat(res[l].bestscoreA)==tab[1]) {
+                    deuxièmenom=res[l].utilisateur
+                }
+                if (parseFloat(res[l].bestscoreA)==tab[2]) {
+                    troisièmenom=res[l].utilisateur
+                }
+            }
+            let msg1=premiernom+" : "+tab[0]+" km."
+            let msg2=deuxièmenom+" : "+tab[1]+" km."
+            let msg3=troisièmenom+" : "+tab[2]+" km."
+            document.getElementById("first").innerHTML=msg1
+            document.getElementById("second").innerHTML=msg2
+            document.getElementById("third").innerHTML=msg3
+        }
+    </script>
+    <div id="map" style="width:50%; height:400px; position: absolute; top: 10px; left: 10px;"></div>
+    <div id="sel"><select id="select" style="position: absolute; top: 500px; left: 40px">
+        <option value="1">Se localiser</option>
+        <option value="2">Placer un point aléatoirment</option>
+    </select></div>
+    <div id="userstate" style="position: absolute; top: 650px; left: 100px"></div>
+    <div id="ptmis" style="width: 250px; height: 20px; position: absolute; top: 450px; left: 180px;"></div>
+    <div id="prembutt"><button id="prembutt" onclick="poscarte()" style="position: absolute; top: 500px; left: 250px">Placer le point</button></div>
+    <div id="erreur" style="width: 250px; height: 20px; position: absolute; top: 550px; left: 100px;"></div>
+    <div id="bt" style="position: absolute; top: 500px; left: 400px"></div>
+    <div id="img" style="position: absolute; top: 10px; left: 800px"></div>
+    <div id="txt" style="position: absolute; top: 550px; left: 800px;"></div>
+    <div id="inp" style="position: absolute; top: 550px; left: 1020px;"></div>
+    <div id="but" style="position: absolute; top: 550px; left: 1200px;"></div>
+    <div id="msgdiff" style="position: absolute; top: 500px; left: 40px;"></div>
+    <div id="bonnediff" style="position: absolute; top: 550px; left: 40px"></div>
+    <p style="position :absolute; top :550px; left :600px">Tableau des meilleurs scores</p>
+    <table style="position :absolute; top :600px; left :600px">
+        <tr><td>1er :</td><td id="first"></td></tr><tr><td>2ème :</td><td id="second"></td></tr><tr><td>3ème :</td><td id="third"></td></tr>
+    </table>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbmtNmv7whCb-3rWYFnSOTIa56Eqgi8iw&callback=carte"></script>
+</body>
+</html>

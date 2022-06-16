@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="db/Database.js"></script>
+</head>
+<body onload="clear()">
+    <script>
+        var connexion={"state": 0}//http://oc3.lddr.ch/Christ/site/index.html
+        function connect(){
+            let user=document.getElementById("inputuser").value
+            let mdp=document.getElementById("inputmdp").value
+            let query="SELECT * FROM usermdp"
+            let res=Database.query(query)
+            for (let k=0;k<res.length;k++){
+                if (res[k].utilisateur==user) {
+                    if (mdp==res[k].mdp) {
+                        connexion.state=1
+                        userdb=res[k].utilisateur
+                    } else {
+                        alert("Mot de passe incorrect")
+                    }
+                }
+            }
+        }
+        function createaccount(){
+            let user=document.getElementById("inputuser").value
+            let mdp=document.getElementById("inputmdp").value
+            let query="SELECT * FROM usermdp"
+            let res=Database.query(query)
+            for (let k=0;k<res.length;k++){
+                if (!(res[k].utilisateur==user)) {
+                    let query2="INSERT INTO usermdp (utilisateur,mdp) VALUES ('"+user+"','"+mdp+"');"
+                    let res2=Database.query(query2)
+                    userdb=user
+                    directconnect()
+                } else {
+                    alert("Le nom d'utilisateur choisi existe déja!")
+                }
+            }
+        }
+        function directconnect(){
+            let mdp=document.getElementById("inputmdp").value
+            let query="SELECT * FROM usermdp"
+            let res=Database.query(query)
+            for (let k=0;k<res.length;k++){
+                if (res[k].utilisateur==userdb) {
+                    if (mdp==res[k].mdp) {
+                        let msg="compte crée!"
+                        document.getElementById("erreur").innerHTML=msg
+                        connexion.state=1
+                    }
+                }
+            }
+        }
+        function jeu1(){
+            if (connexion.state==1) {
+                store(userdb,"page.html")
+            } else {
+                alert("Vous n'êtes pas connecté!")
+            }
+        }
+        function jeu2(){
+            if (connexion.state==1) {
+                store(userdb,"page2.html")
+            } else {
+                alert("Vous n'êtes pas connecté!")
+            }
+        }
+        function store(x,link){
+            var params=new URLSearchParams()
+            params.append("first",x)
+            document.cookie="pass="+params.toString()
+            location.href=link
+        }
+        function clear(){
+            interv=setInterval("clear2()",1)
+        }
+        function clear2(){
+            if (connexion.state==1) {
+                clearInterval(interv)
+                let vide=""
+                document.getElementById("clear").innerHTML=vide
+                let connectinfo="Connecté en temps que : "+userdb+"."
+                document.getElementById("connectinfo").innerHTML=connectinfo
+            }
+        }
+    </script>
+    <div id="erreur" style="position :absolute; top: 30px; left: 400px;"></div>
+    <div id="connectinfo" style="position :absolute; top: 30px; left: 500px;"></div>
+    <div id="clear"><p style="position :absolute; top: 30px; left: 500px; text-align: center;">Nom d'utilisateur :</p>
+    <input style="position :absolute; top: 70px; left: 500px;" id="inputuser">
+    <p style="position :absolute; top: 90px; left: 500px;">Mot de passe :</p>
+    <input style="position :absolute; top: 130px; left: 500px;" id="inputmdp">
+    <button style="position: absolute; top: 130px; left: 700px;" onclick="connect()">Se connecter</button>
+    <button style="position: absolute; top: 130px; left: 800px;" onclick="createaccount()">Créer un compte</button></div>
+    <button style="position: absolute; top: 200px; left: 500px;" onclick="jeu1()"></button>
+    <button style="position: absolute; top: 240px; left: 500px;" onclick="jeu2()"></button>
+</body>
+</html>
